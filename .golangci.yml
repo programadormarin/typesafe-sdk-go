@@ -1,0 +1,25 @@
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - godot
+    - misspell
+    - unconvert
+    - unparam
+
+linters-settings:
+  godot:
+    scope: declarations
+    capital: false
+
+issues:
+  exclude-rules:
+    # Examples don't need full error handling discipline.
+    - path: examples/
+      linters: [errcheck]
+    # Test helpers legitimately use t.Helper() patterns.
+    - path: _test\.go
+      linters: [unparam]

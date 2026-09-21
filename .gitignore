@@ -1,0 +1,16 @@
+# Compiled binaries
+/quickstart
+/parallel_questions
+
+# Go build cache
+*.test
+*.out
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
