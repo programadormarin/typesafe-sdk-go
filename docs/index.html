@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TypeSafe Go SDK</title>
+  <meta name="description" content="An unofficial Go SDK for the TypeSafe System One API. A typed, dependency-free client for sending state and questions to TypeSafe's System One models, inspired by the official Python and JavaScript SDKs.">
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card: #161b22;
+      --fg: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --accent2: #3fb950;
+      --border: #30363d;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.6;
+    }
+
+    .wrap { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+    header {
+      padding: 64px 0 40px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 2.4rem;
+      margin: 0 0 8px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: transparent;
+    }
+
+    header p { color: var(--muted); font-size: 1.1rem; margin: 0; }
+
+    .badges { margin-top: 18px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      color: var(--fg);
+      background: var(--card);
+      font-size: 0.85rem;
+      text-decoration: none;
+    }
+    .badge:hover { border-color: var(--accent); }
+
+    section { margin: 40px 0; }
+
+    h2 {
+      font-size: 1.4rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+      margin: 0 0 16px;
+    }
+
+    p, li { color: var(--fg); }
+    .muted { color: var(--muted); }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin: 12px 0;
+    }
+
+    .card h3 { margin: 0 0 6px; font-size: 1.05rem; }
+    .card code { color: var(--accent); }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.9em;
+      background: #21262d;
+      border-radius: 4px;
+      padding: 2px 6px;
+    }
+
+    pre {
+      background: #0f1419;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      overflow-x: auto;
+      font-size: 0.85rem;
+    }
+    pre code { background: none; padding: 0; color: #c9d1d9; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+
+    .links { list-style: none; padding: 0; }
+    .links li { margin: 8px 0; }
+    .links a { color: var(--accent); text-decoration: none; }
+    .links a:hover { text-decoration: underline; }
+
+    footer { padding: 32px 0; text-align: center; color: var(--muted); font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>TypeSafe Go SDK</h1>
+    <p>An unofficial, community-built Go client for the TypeSafe System One API</p>
+    <div class="badges">
+      <a class="badge" href="#about">About this SDK</a>
+      <a class="badge" href="#what-is-typesafe">What is TypeSafe?</a>
+      <a class="badge" href="#how-it-works">How it works</a>
+      <a class="badge" href="#documentation">Documentation</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section id="about">
+    <h2>About this SDK</h2>
+    <p>
+      <strong>typesafe-sdk-go</strong> is an <strong>unofficial</strong>, community-built Go SDK for the
+      <a href="https://typesafe.ai">TypeSafe</a> System One API. It is not maintained by TypeSafe, but it is
+      <strong>useful, secure, and well developed</strong>. It lets Go applications send
+      <strong>state</strong> (text, a record, a chat log — any JSON value) and a map of typed
+      <strong>questions</strong>, then consume the typed <strong>answers</strong> directly — no parsing
+      of generated text.
+    </p>
+    <p>
+      The module is a single package (<code>typesafe</code>) built purely on the Go standard library:
+    </p>
+    <ul>
+      <li><strong>Useful</strong> — mirrors the official SDK API contract, so code that follows TypeSafe's
+      Python or JavaScript examples ports to Go with minimal changes</li>
+      <li><strong>Secure</strong> — no external dependencies, no logging of secrets, API keys passed explicitly
+      or via <code>TYPESAFE_API_KEY</code>, and TLS by default</li>
+      <li><strong>Well developed</strong> — CI-tested against multiple Go versions, integration-tested against the
+      live API, versioned releases, and a full typed error hierarchy</li>
+      <li>Sync and async-friendly via <code>context.Context</code></li>
+      <li>Automatic retries with exponential backoff and <code>Retry-After</code> respect</li>
+      <li>All three question primitives: <code>Noul</code>, <code>Choice</code>, <code>Score</code></li>
+    </ul>
+    <p>
+      This SDK was <strong>inspired by the official TypeSafe Python and JavaScript SDKs</strong> from
+      <a href="https://typesafe.ai">typesafe-ai</a>, bringing the same API contract, retry policies, error
+      handling, and configuration options to Go while following Go idioms.
+    </p>
+  </section>
+
+  <section id="what-is-typesafe">
+    <h2>What is TypeSafe?</h2>
+    <p>
+      TypeSafe makes units of AI intelligence usable like programming primitives: small judgments you can
+      compose into larger capabilities. Instead of generating free-form text, TypeSafe's
+      <strong>System One models</strong> return fast, focused, typed judgments that software can consume directly.
+    </p>
+    <p class="muted">
+      Code owns the workflow. The model supplies programmable common sense where ordinary code needs semantic
+      understanding — without parsing text or wrangling hallucinations out of an LLM.
+    </p>
+  </section>
+
+  <section id="what-is-jev">
+    <h2>What is Jev?</h2>
+    <p>
+      <strong>Jev</strong> is TypeSafe's flagship System One model and the default model used by this SDK
+      (<code>jev-latest</code>). You send it <strong>state</strong> and a map of typed <strong>questions</strong>;
+      it returns typed <strong>answers</strong> and calibrated probabilities you can act on directly.
+    </p>
+    <ul>
+      <li>Understands natural language and application state</li>
+      <li>Returns structured, typed answers — not generated text</li>
+      <li>Calibrated probabilities you can threshold and compose in code</li>
+    </ul>
+  </section>
+
+  <section id="how-it-works">
+    <h2>How it works</h2>
+    <p>
+      One call to <code>SystemOne</code> carries your state plus any number of questions. The questions run in
+      parallel and return typed answers with probabilities and confidence scores.
+    </p>
+    <pre><code>resp, err := client.SystemOne(
+    context.Background(),
+    map[string]any{ "document": "I was charged twice. Please fix this ASAP." },
+    map[string]typesafe.Question{
+        "is_billing": typesafe.Noul{
+            Instructions: "Is this ticket about billing?",
+        },
+        "tone": typesafe.Choice{
+            Instructions: "What is the customer's tone?",
+            Criteria: map[string]any{ "calm": nil, "frustrated": nil, "angry": nil },
+        },
+        "urgency": typesafe.Score{
+            Instructions: "How urgent is this ticket?",
+            Criteria: []any{ "can wait", "this week", "today" },
+        },
+    },
+)
+
+fmt.Println(resp.Nouls()["is_billing"].Noul)    // e.g. 0.97
+fmt.Println(resp.Choices()["tone"].Choice)      // e.g. "frustrated"
+fmt.Println(resp.Scores()["urgency"].Score)     // e.g. 1.8</code></pre>
+
+    <div class="grid">
+      <div class="card">
+        <h3>Noul — yes/no</h3>
+        <p>A calibrated probability between 0 and 1 that a condition holds.</p>
+        <p><code>resp.Nouls()["q"].Noul</code> &rarr; e.g. <code>0.91</code></p>
+      </div>
+      <div class="card">
+        <h3>Choice — pick one</h3>
+        <p>Selects one option from a defined set, with all probabilities and a confidence score.</p>
+        <p><code>resp.Choices()["q"].Choice</code> &rarr; e.g. <code>"billing"</code></p>
+      </div>
+      <div class="card">
+        <h3>Score — rate a rubric</h3>
+        <p>Probability-weighted position on ordered, descriptive levels.</p>
+        <p><code>resp.Scores()["q"].Score</code> &rarr; e.g. <code>1.05</code></p>
+      </div>
+    </div>
+  </section>
+
+  <section id="documentation">
+    <h2>Documentation</h2>
+    <p>Read the full TypeSafe docs to go deeper — concepts, API contracts, patterns, and cookbooks.</p>
+    <ul class="links">
+      <li><a href="https://docs.typesafe.ai/introduction">Introduction</a> — what TypeSafe is, and what Jev is (and isn't)</li>
+      <li><a href="https://docs.typesafe.ai/concepts/system-one">System One</a> — the programming model behind the API</li>
+      <li><a href="https://docs.typesafe.ai/primitives">Primitives</a> — Noul, Choice, and Score question types</li>
+      <li><a href="https://docs.typesafe.ai/concepts/state">State</a> — how to structure the context you send</li>
+      <li><a href="https://docs.typesafe.ai/confidence">Confidence</a> — how TypeSafe reports certainty and how to use it</li>
+      <li><a href="https://docs.typesafe.ai/concepts/how-to-build-with-system-one">How to build with TypeSafe</a> — design guidance</li>
+      <li><a href="https://docs.typesafe.ai/concepts/use-case-map">Example use cases</a> — by industry</li>
+      <li><a href="https://docs.typesafe.ai/patterns">Patterns</a> — fan-out, confidence routing, composite scoring, and more</li>
+      <li><a href="https://docs.typesafe.ai/cookbooks">Cookbooks</a> — worked end-to-end examples</li>
+      <li><a href="https://docs.typesafe.ai/api">HTTP API reference</a> — full API contract</li>
+      <li><a href="https://docs.typesafe.ai/models">Models</a> — available System One models</li>
+      <li><a href="https://docs.typesafe.ai/sdk">Client SDKs</a> — the <a href="https://docs.typesafe.ai/sdk/python">Python SDK</a> and <a href="https://docs.typesafe.ai/sdk/javascript">JavaScript SDK</a> that inspired <a href="https://github.com/programadormarin/typesafe-sdk-go">this Go SDK</a></li>
+    </ul>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <a href="https://github.com/programadormarin/typesafe-sdk-go">type-safe-sdk-go on GitHub</a> &middot;
+    <a href="https://typesafe.ai">typesafe.ai</a> &middot; MIT License
+  </div>
+</footer>
+
+</body>
+</html>
