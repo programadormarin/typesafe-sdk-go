@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>TypeSafe Go SDK</title>
-  <meta name="description" content="The official Go SDK for the TypeSafe System One API. A typed, dependency-free client for sending state and questions to TypeSafe's System One models, inspired by the official Python and JavaScript SDKs.">
+  <meta name="description" content="An unofficial Go SDK for the TypeSafe System One API. A typed, dependency-free client for sending state and questions to TypeSafe's System One models, inspired by the official Python and JavaScript SDKs.">
   <style>
     :root {
       --bg: #0d1117;
@@ -114,7 +114,7 @@
 <header>
   <div class="wrap">
     <h1>TypeSafe Go SDK</h1>
-    <p>Official Go client for the TypeSafe System One API</p>
+    <p>An unofficial, community-built Go client for the TypeSafe System One API</p>
     <div class="badges">
       <a class="badge" href="#about">About this SDK</a>
       <a class="badge" href="#what-is-typesafe">What is TypeSafe?</a>
@@ -129,8 +129,9 @@
   <section id="about">
     <h2>About this SDK</h2>
     <p>
-      <strong>typesafe-sdk-go</strong> is the official Go SDK for the
-      <a href="https://typesafe.ai">TypeSafe</a> System One API. It lets Go applications send
+      <strong>typesafe-sdk-go</strong> is an <strong>unofficial</strong>, community-built Go SDK for the
+      <a href="https://typesafe.ai">TypeSafe</a> System One API. It is not maintained by TypeSafe, but it is
+      <strong>useful, secure, and well developed</strong>. It lets Go applications send
       <strong>state</strong> (text, a record, a chat log — any JSON value) and a map of typed
       <strong>questions</strong>, then consume the typed <strong>answers</strong> directly — no parsing
       of generated text.
@@ -139,10 +140,14 @@
       The module is a single package (<code>typesafe</code>) built purely on the Go standard library:
     </p>
     <ul>
-      <li><strong>Zero external dependencies</strong> — pure standard library</li>
+      <li><strong>Useful</strong> — mirrors the official SDK API contract, so code that follows TypeSafe's
+      Python or JavaScript examples ports to Go with minimal changes</li>
+      <li><strong>Secure</strong> — no external dependencies, no logging of secrets, API keys passed explicitly
+      or via <code>TYPESAFE_API_KEY</code>, and TLS by default</li>
+      <li><strong>Well developed</strong> — CI-tested against multiple Go versions, integration-tested against the
+      live API, versioned releases, and a full typed error hierarchy</li>
       <li>Sync and async-friendly via <code>context.Context</code></li>
       <li>Automatic retries with exponential backoff and <code>Retry-After</code> respect</li>
-      <li>Full typed error hierarchy — unwrap any subtype with <code>errors.As</code></li>
       <li>All three question primitives: <code>Noul</code>, <code>Choice</code>, <code>Score</code></li>
     </ul>
     <p>
@@ -241,7 +246,7 @@ fmt.Println(resp.Scores()["urgency"].Score)     // e.g. 1.8</code></pre>
       <li><a href="https://docs.typesafe.ai/cookbooks">Cookbooks</a> — worked end-to-end examples</li>
       <li><a href="https://docs.typesafe.ai/api">HTTP API reference</a> — full API contract</li>
       <li><a href="https://docs.typesafe.ai/models">Models</a> — available System One models</li>
-      <li><a href="https://docs.typesafe.ai/sdk">Client SDKs</a> — the <a href="https://docs.typesafe.ai/sdk/python">Python SDK</a> and <a href="https://docs.typesafe.ai/sdk/javascript">JavaScript SDK</a> that inspired this Go SDK</li>
+      <li><a href="https://docs.typesafe.ai/sdk">Client SDKs</a> — the <a href="https://docs.typesafe.ai/sdk/python">Python SDK</a> and <a href="https://docs.typesafe.ai/sdk/javascript">JavaScript SDK</a> that inspired <a href="https://github.com/programadormarin/typesafe-sdk-go">this Go SDK</a></li>
     </ul>
   </section>
 
