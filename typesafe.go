@@ -1,4 +1,7 @@
-// Package typesafe is the official Go client for the TypeSafe System One API.
+// Package typesafe is an unofficial, community-built Go client for the TypeSafe
+// System One API. It is not maintained by TypeSafe, but it is useful, secure, and
+// well developed. It was inspired by the official TypeSafe Python and JavaScript
+// SDKs.
 //
 // TypeSafe's System One models make fast, structured decisions that software can
 // consume directly. You send state (text, a record, a chat log — any JSON value)

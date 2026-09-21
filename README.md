@@ -1,6 +1,10 @@
 # TypeSafe Go SDK
 
-The official Go client for the [TypeSafe System One API](https://typesafe.ai).
+The unofficial, community-built Go client for the [TypeSafe System One API](https://typesafe.ai).
+
+This SDK is not maintained by TypeSafe, but it is useful, secure, and well developed.
+It was inspired by the official TypeSafe [Python](https://docs.typesafe.ai/sdk/python)
+and [JavaScript](https://docs.typesafe.ai/sdk/javascript) SDKs.
 
 TypeSafe's System One models make fast, structured decisions your code can consume
 directly. You send **state** (text, a record, a chat log — any JSON value) and a map
