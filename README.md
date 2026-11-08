@@ -19,7 +19,7 @@ parsing generated text.
 
 ## Requirements
 
-- Go 1.21 or later
+- Go 1.25 or later
 
 ## Installation
 
