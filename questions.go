@@ -188,7 +188,7 @@ func (q RawQuestion) questionType() string {
 	t, _ := q["type"].(string)
 	return t
 }
-func (q RawQuestion) validate(name string) error {
+func (q RawQuestion) validate(name string) error { //nolint:unparam // callers supply arbitrary names
 	if q.questionType() == "" {
 		return fmt.Errorf("raw question %q requires a nonempty string type: %w", name, ErrInvalidRequest)
 	}

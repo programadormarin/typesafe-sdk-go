@@ -448,7 +448,7 @@ func SystemOneAs[T any](ctx context.Context, client *Client, request SystemOneRe
 	}
 	result := new(T)
 	if err := json.Unmarshal(lifted, result); err != nil {
-		return nil, &TypeSafeResponseValidationError{TypeSafeAPIError: TypeSafeAPIError{TypeSafeError: TypeSafeError{Message: err.Error()}, StatusCode: meta.StatusCode, Body: data, Headers: meta.Headers, RequestID: meta.RequestID}, FieldPath: "."}
+		return nil, &TypeSafeResponseValidationError{TypeSafeAPIError: TypeSafeAPIError{TypeSafeError: TypeSafeError{Message: validationCause(err).Error()}, StatusCode: meta.StatusCode, Body: data, Headers: meta.Headers, RequestID: meta.RequestID}, FieldPath: "."}
 	}
 	return result, nil
 }

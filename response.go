@@ -160,9 +160,6 @@ func (w wireAnswer) toAnswer(raw json.RawMessage) (Answer, error) {
 		if err := json.Unmarshal(raw, &a); err != nil {
 			return nil, fmt.Errorf("box answer: %w", err)
 		}
-		if a.Confidence == nil {
-			// allow nil; nothing
-		}
 		return &a, nil
 
 	default:

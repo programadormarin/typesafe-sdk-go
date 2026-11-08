@@ -1,25 +1,36 @@
+version: "2"
 linters:
   enable:
-    - errcheck
-    - govet
-    - ineffassign
-    - staticcheck
-    - unused
     - godot
     - misspell
     - unconvert
     - unparam
-
-linters-settings:
-  godot:
-    scope: declarations
-    capital: false
-
-issues:
-  exclude-rules:
-    # Examples don't need full error handling discipline.
-    - path: examples/
-      linters: [errcheck]
-    # Test helpers legitimately use t.Helper() patterns.
-    - path: _test\.go
-      linters: [unparam]
+  settings:
+    godot:
+      scope: declarations
+      capital: false
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - errcheck
+        path: examples/
+      - linters:
+          - unparam
+        path: _test\.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

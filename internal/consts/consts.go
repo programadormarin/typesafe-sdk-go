@@ -32,4 +32,4 @@ const SDKName = "typesafe-sdk-go"
 // Version is the SDK release version. It is embedded in request headers and
 // exposed as [typesafe.Version]. Bump it and tag the matching git tag on every
 // release.
-const Version = "0.2.0"
+const Version = "0.1.0"

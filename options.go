@@ -25,7 +25,7 @@ type clientConfig struct {
 
 // Config fields covered above.
 
-// Functional options
+// Functional options.
 func WithAPIKey(key string) ClientOption { return func(c *clientConfig) { c.apiKey = key } }
 func WithBaseURL(u string) ClientOption { return func(c *clientConfig) { c.baseURL = u } }
 func WithModel(model string) ClientOption { return func(c *clientConfig) { c.defaultModel = model } }
@@ -51,7 +51,7 @@ func WithHeaders(h http.Header) ClientOption {
 func WithLogger(l *slog.Logger) ClientOption { return func(c *clientConfig) { c.logger = l } }
 func WithCompression(comp Compression) ClientOption { return func(c *clientConfig) { c.compression = comp } }
 
-// WithRequest* options
+// WithRequest* options.
 type RequestOption func(*requestOptions)
 
 type requestOptions struct {

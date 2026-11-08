@@ -31,7 +31,7 @@ func TestNewClientConfigAndAccessors(t *testing.T) {
 
 func TestModelsServiceAndMethod(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`{"models":[{"name":"m","description":"d","release_date":"2026-01-01"}]}`))
+		_, _ = w.Write([]byte(`{"models":[{"name":"m","description":"d","release_date":"2026-01-01"}]}`))
 	}))
 	defer srv.Close()
 	c, _ := New(WithAPIKey("k"), WithBaseURL(srv.URL))
@@ -90,10 +90,10 @@ func TestBoxAndRequestOptions(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotHeader = r.Header.Get("X-Test")
 		var body map[string]any
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		gotModel, _ = body["model"].(string)
 		gotExtra, _ = body["extra"].(string)
-		w.Write([]byte(`{"model":"m","answers":{},"usage":{}}`))
+		_, _ = w.Write([]byte(`{"model":"m","answers":{},"usage":{}}`))
 	}))
 	defer srv.Close()
 	c, _ := New(WithAPIKey("k"), WithBaseURL(srv.URL), WithHeaders(http.Header{"X-Base": {"1"}}), WithLogger(slog.New(slog.NewTextHandler(io.Discard, nil))))
@@ -117,7 +117,7 @@ func TestErrorTypesAndUserAbort(t *testing.T) {
 
 func TestSystemOneAsErrors(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`{"model":"m","answers":{"q":{"no_type":true}},"usage":{}}`))
+		_, _ = w.Write([]byte(`{"model":"m","answers":{"q":{"no_type":true}},"usage":{}}`))
 	}))
 	defer srv.Close()
 	c, _ := New(WithAPIKey("k"), WithBaseURL(srv.URL), WithRetry(RetryPolicy{MaxRetries: 0}))
@@ -127,7 +127,7 @@ func TestSystemOneAsErrors(t *testing.T) {
 	}
 	// type mismatch path
 	srv2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`{"model":"m","answers":{"q":{"type":"noul","noul":1}},"usage":{}}`))
+		_, _ = w.Write([]byte(`{"model":"m","answers":{"q":{"type":"noul","noul":1}},"usage":{}}`))
 	}))
 	defer srv2.Close()
 	c2, _ := New(WithAPIKey("k"), WithBaseURL(srv2.URL), WithRetry(RetryPolicy{MaxRetries: 0}))
@@ -147,7 +147,7 @@ func TestCompressionNoneNoHeader(t *testing.T) {
 	var ce string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ce = r.Header.Get("Content-Encoding")
-		w.Write([]byte(`{"model":"m","answers":{},"usage":{}}`))
+		_, _ = w.Write([]byte(`{"model":"m","answers":{},"usage":{}}`))
 	}))
 	defer srv.Close()
 	c, _ := New(WithAPIKey("k"), WithBaseURL(srv.URL), WithCompression(CompressionNone), WithRetry(RetryPolicy{MaxRetries: 0}))

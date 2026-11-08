@@ -13,7 +13,7 @@ import (
 
 func TestBoxQuestionRoundTrip(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`{"model":"m","answers":{"dog":{"type":"box","box":{"top":0.1,"bottom":0.9,"left":0.2,"right":0.8},"confidence":0.7}},"usage":{}}`))
+		_, _ = w.Write([]byte(`{"model":"m","answers":{"dog":{"type":"box","box":{"top":0.1,"bottom":0.9,"left":0.2,"right":0.8},"confidence":0.7}},"usage":{}}`))
 	}))
 	defer srv.Close()
 	c, _ := New(WithAPIKey("k"), WithBaseURL(srv.URL), WithRetry(RetryPolicy{MaxRetries: 0}))
@@ -30,7 +30,7 @@ func TestBoxQuestionRoundTrip(t *testing.T) {
 
 func TestSystemOneAsLiftsAnswers(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`{"model":"m","answers":{"spam":{"type":"noul","noul":0.9}},"usage":{"input_tokens":1,"output_tokens":2}}`))
+		_, _ = w.Write([]byte(`{"model":"m","answers":{"spam":{"type":"noul","noul":0.9}},"usage":{"input_tokens":1,"output_tokens":2}}`))
 	}))
 	defer srv.Close()
 	c, _ := New(WithAPIKey("k"), WithBaseURL(srv.URL), WithRetry(RetryPolicy{MaxRetries: 0}))
@@ -52,16 +52,15 @@ func TestImageMultipartUpload(t *testing.T) {
 		gotCT = r.Header.Get("Content-Type")
 		b, _ := json.Marshal(map[string]any{})
 		// parse multipart
-		r.ParseMultipartForm(10 << 20)
+		_ = r.ParseMultipartForm(10 << 20)
 		if r.MultipartForm != nil {
 			if _, ok := r.MultipartForm.File["asset-0"]; ok { sawAsset = true }
 		}
-		w.Write([]byte(`{"model":"m","answers":{},"usage":{}}`))
+		_, _ = w.Write([]byte(`{"model":"m","answers":{},"usage":{}}`))
 		_ = b
 	}))
 	defer srv.Close()
-	img := ImageFromFile("/dev/null") // may read empty -> error; instead construct bytes
-	img = NewImage([]byte{0x89, 'P', 'N', 'G', 1, 2, 3})
+	img := NewImage([]byte{0x89, 'P', 'N', 'G', 1, 2, 3})
 	c, _ := New(WithAPIKey("k"), WithBaseURL(srv.URL), WithRetry(RetryPolicy{MaxRetries: 0}))
 	_, err := c.SystemOne(context.Background(), SystemOneRequest{
 		State: []any{"see", img},
@@ -81,8 +80,8 @@ func TestImageMultipartUpload(t *testing.T) {
 func TestNonFiniteSanitization(t *testing.T) {
 	var captured map[string]any
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		json.NewDecoder(r.Body).Decode(&captured)
-		w.Write([]byte(`{"model":"m","answers":{},"usage":{}}`))
+		_ = json.NewDecoder(r.Body).Decode(&captured)
+		_, _ = w.Write([]byte(`{"model":"m","answers":{},"usage":{}}`))
 	}))
 	defer srv.Close()
 	c, _ := New(WithAPIKey("k"), WithBaseURL(srv.URL), WithRetry(RetryPolicy{MaxRetries: 0}))
@@ -100,7 +99,7 @@ func TestCompressionContentEncoding(t *testing.T) {
 	var ce string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ce = r.Header.Get("Content-Encoding")
-		w.Write([]byte(`{"model":"m","answers":{},"usage":{}}`))
+		_, _ = w.Write([]byte(`{"model":"m","answers":{},"usage":{}}`))
 	}))
 	defer srv.Close()
 	c, _ := New(WithAPIKey("k"), WithBaseURL(srv.URL), WithRetry(RetryPolicy{MaxRetries: 0}))

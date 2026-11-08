@@ -113,7 +113,7 @@ func (c *Client) withAssets(encoded []byte, request SystemOneRequest) ([]byte, s
 	resolved := make([]*resolvedImage, len(pending))
 	for i, asset := range pending {
 		if resolved[i], err = asset.image.resolve(); err != nil {
-			return nil, "", fmt.Errorf("Asset %q: %w", asset.name, err)
+			return nil, "", fmt.Errorf("asset %q: %w", asset.name, err)
 		}
 	}
 	body, contentType := encodeMultipart(spliceAssets(rewritten, pending), resolved)
@@ -305,7 +305,7 @@ func collectImages(images map[string]*Image, visited map[visit]bool, v reflect.V
 			if field.Tag.Get("json") == "-" {
 				continue
 			}
-			if !field.IsExported() && !(field.Anonymous && field.Type.Kind() == reflect.Struct) {
+			if !field.IsExported() && (!field.Anonymous || field.Type.Kind() != reflect.Struct) {
 				continue
 			}
 			collectImages(images, visited, v.Field(i))
