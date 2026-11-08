@@ -244,6 +244,18 @@ func (r *SystemOneResponse) Boxes() map[string]*BoxAnswer {
 	return r.boxes
 }
 
+// Box returns the BoxAnswer for name, if present.
+func (r *SystemOneResponse) Box(name string) (BoxAnswer, bool) {
+	if r == nil || r.Answers == nil {
+		return BoxAnswer{}, false
+	}
+	a, ok := r.Answers[name].(*BoxAnswer)
+	if !ok || a == nil {
+		return BoxAnswer{}, false
+	}
+	return *a, true
+}
+
 func (r *SystemOneResponse) buildAccessors() {
 	r.once.Do(func() {
 		r.nouls = make(map[string]*NoulAnswer)
