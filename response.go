@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"net/http"
 	"sync"
 )
 
@@ -53,6 +54,40 @@ type ScoreAnswer struct {
 
 func (ScoreAnswer) answerType() string { return "score" }
 
+// BoxCoordinates holds a box's edges as fractions of the image's height
+// (Top, Bottom) and width (Left, Right), from 0 to 1.
+type BoxCoordinates struct {
+	Top    float64 `json:"top"`
+	Bottom float64 `json:"bottom"`
+	Left   float64 `json:"left"`
+	Right  float64 `json:"right"`
+}
+
+// BoxAnswer is a located box. Confidence is nil when not provided.
+type BoxAnswer struct {
+	Type       string         `json:"type"`
+	Box        BoxCoordinates `json:"box"`
+	Confidence *float64       `json:"confidence"`
+}
+
+func (BoxAnswer) answerType() string { return "box" }
+
+// UnknownAnswer preserves an answer type added by a future API version.
+type UnknownAnswer struct {
+	Type string
+	Raw  json.RawMessage
+}
+
+func (a UnknownAnswer) answerType() string { return a.Type }
+
+// ResponseMeta contains HTTP metadata shared by successful responses.
+type ResponseMeta struct {
+	StatusCode int
+	Headers    http.Header
+	RequestID  string
+}
+
+
 // ─── Wire answer (for JSON unmarshalling) ────────────────────────────────────
 
 // wireAnswer is a raw decoded answer before type dispatch.
@@ -71,7 +106,7 @@ type wireAnswer struct {
 
 // toAnswer converts the raw wire answer to the appropriate typed Answer.
 // Returns nil, nil for unrecognised types (forward-compat).
-func (w wireAnswer) toAnswer() (Answer, error) {
+func (w wireAnswer) toAnswer(raw json.RawMessage) (Answer, error) {
 	switch w.Type {
 	case "noul":
 		if w.Noul == nil {
@@ -120,9 +155,19 @@ func (w wireAnswer) toAnswer() (Answer, error) {
 			Confidence:    *w.Confidence,
 		}, nil
 
+	case "box":
+		var a BoxAnswer
+		if err := json.Unmarshal(raw, &a); err != nil {
+			return nil, fmt.Errorf("box answer: %w", err)
+		}
+		if a.Confidence == nil {
+			// allow nil; nothing
+		}
+		return &a, nil
+
 	default:
-		// Unknown answer type — silently skip for forward-compat.
-		return nil, nil
+		// Preserve unknown answer types (forward-compat).
+		return &UnknownAnswer{Type: w.Type, Raw: append(json.RawMessage(nil), raw...)}, nil
 	}
 }
 
@@ -164,11 +209,15 @@ type SystemOneResponse struct {
 	// Usage contains token counts for the request.
 	Usage Usage `json:"usage"`
 
+	// Meta contains HTTP metadata for the response.
+	Meta ResponseMeta
+
 	// once guards lazy accessor initialisation.
 	once    sync.Once
 	nouls   map[string]*NoulAnswer
 	choices map[string]*ChoiceAnswer
 	scores  map[string]*ScoreAnswer
+	boxes   map[string]*BoxAnswer
 }
 
 // Nouls returns all NoulAnswer values keyed by question name.
@@ -189,11 +238,18 @@ func (r *SystemOneResponse) Scores() map[string]*ScoreAnswer {
 	return r.scores
 }
 
+// Boxes returns all BoxAnswer values keyed by question name.
+func (r *SystemOneResponse) Boxes() map[string]*BoxAnswer {
+	r.buildAccessors()
+	return r.boxes
+}
+
 func (r *SystemOneResponse) buildAccessors() {
 	r.once.Do(func() {
 		r.nouls = make(map[string]*NoulAnswer)
 		r.choices = make(map[string]*ChoiceAnswer)
 		r.scores = make(map[string]*ScoreAnswer)
+		r.boxes = make(map[string]*BoxAnswer)
 		for name, a := range r.Answers {
 			switch v := a.(type) {
 			case *NoulAnswer:
@@ -202,6 +258,8 @@ func (r *SystemOneResponse) buildAccessors() {
 				r.choices[name] = v
 			case *ScoreAnswer:
 				r.scores[name] = v
+			case *BoxAnswer:
+				r.boxes[name] = v
 			}
 		}
 	})
@@ -228,7 +286,7 @@ func (r *SystemOneResponse) UnmarshalJSON(data []byte) error {
 		if err := json.Unmarshal(rawAnswer, &w); err != nil {
 			return fmt.Errorf("answers.%s: %w", name, err)
 		}
-		answer, err := w.toAnswer()
+		answer, err := w.toAnswer(rawAnswer)
 		if err != nil {
 			return fmt.Errorf("answers.%s: %w", name, err)
 		}

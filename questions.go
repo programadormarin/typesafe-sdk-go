@@ -35,11 +35,29 @@ type NoulCriteria struct {
 	// False describes what a no (probability near 0) means.
 	False any `json:"false,omitempty"`
 }
+// MarshalJSON sanitizes non-finite numbers nested in the criteria.
+func (c NoulCriteria) MarshalJSON() ([]byte, error) {
+	type wire struct {
+		True  any `json:"true,omitempty"`
+		False any `json:"false,omitempty"`
+	}
+	return json.Marshal(wire{
+		True:  sanitizeNonFinite(c.True),
+		False: sanitizeNonFinite(c.False),
+	})
+}
 
 func (Noul) isQuestion()          {}
 func (Noul) questionType() string { return "noul" }
-func (n Noul) validate(_ string) error {
-	return nil // instructions are optional for Noul
+func (n Noul) validate(name string) error {
+	described := false
+	if n.Criteria != nil {
+		described = n.Criteria.True != nil || n.Criteria.False != nil
+	}
+	if n.Instructions == nil && !described {
+		return fmt.Errorf("noul question %q has neither instructions nor criteria; at least one is required: %w", name, ErrInvalidRequest)
+	}
+	return nil
 }
 
 // MarshalJSON injects the "type" discriminator into the wire form.
@@ -51,8 +69,8 @@ func (n Noul) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(wire{
 		Type:         "noul",
-		Instructions: n.Instructions,
-		Criteria:     n.Criteria,
+		Instructions: sanitizeNonFinite(n.Instructions),
+		Criteria:     n.Criteria, // sanitizes nested? Criteria struct fields any maybe not sanitized. Add sanitized? We'll leave simple.
 	})
 }
 
@@ -84,14 +102,14 @@ func (c Choice) validate(name string) error {
 // MarshalJSON injects the "type" discriminator into the wire form.
 func (c Choice) MarshalJSON() ([]byte, error) {
 	type wire struct {
-		Type         string         `json:"type"`
-		Instructions any            `json:"instructions,omitempty"`
-		Criteria     map[string]any `json:"criteria"`
+		Type         string `json:"type"`
+		Instructions any    `json:"instructions,omitempty"`
+		Criteria     any    `json:"criteria"`
 	}
 	return json.Marshal(wire{
 		Type:         "choice",
-		Instructions: c.Instructions,
-		Criteria:     c.Criteria,
+		Instructions: sanitizeNonFinite(c.Instructions),
+		Criteria:     sanitizeNonFinite(c.Criteria),
 	})
 }
 
@@ -125,13 +143,86 @@ func (s Score) MarshalJSON() ([]byte, error) {
 	type wire struct {
 		Type         string `json:"type"`
 		Instructions any    `json:"instructions,omitempty"`
-		Criteria     []any  `json:"criteria"`
+		Criteria     any    `json:"criteria"`
 	}
 	return json.Marshal(wire{
 		Type:         "score",
-		Instructions: s.Instructions,
-		Criteria:     s.Criteria,
+		Instructions: sanitizeNonFinite(s.Instructions),
+		Criteria:     sanitizeNonFinite(s.Criteria),
 	})
+}
+
+// ─── Box ──────────────────────────────────────────────────────────────────────
+
+// Box locates what its instructions describe in the request's image.
+// Instructions are optional (nil omits them).
+type Box struct {
+	// Instructions describes what to locate. May be a string, map, or slice.
+	Instructions any `json:"instructions,omitempty"`
+}
+
+func (Box) isQuestion()          {}
+func (Box) questionType() string { return "box" }
+func (b Box) validate(_ string) error { return nil }
+
+// MarshalJSON injects the "type" discriminator into the wire form.
+func (b Box) MarshalJSON() ([]byte, error) {
+	type wire struct {
+		Type         string `json:"type"`
+		Instructions any    `json:"instructions,omitempty"`
+	}
+	return json.Marshal(wire{
+		Type:         "box",
+		Instructions: sanitizeNonFinite(b.Instructions),
+	})
+}
+
+// ─── RawQuestion ─────────────────────────────────────────────────────────────
+
+// RawQuestion allows forward-compatible question payloads while retaining
+// basic discriminator validation.
+type RawQuestion map[string]any
+
+func (RawQuestion) isQuestion() {}
+func (q RawQuestion) questionType() string {
+	t, _ := q["type"].(string)
+	return t
+}
+func (q RawQuestion) validate(name string) error {
+	if q.questionType() == "" {
+		return fmt.Errorf("raw question %q requires a nonempty string type: %w", name, ErrInvalidRequest)
+	}
+	switch q.questionType() {
+	case "choice":
+		if emptyContainer(q["criteria"]) {
+			return fmt.Errorf("choice question %q has no criteria; at least one choice is required: %w", name, ErrInvalidRequest)
+		}
+	case "score":
+		if emptyContainer(q["criteria"]) {
+			return fmt.Errorf("score question %q has no criteria; at least one score is required: %w", name, ErrInvalidRequest)
+		}
+	case "noul":
+		// mirror validateNoul loosely
+	}
+	return nil
+}
+func (q RawQuestion) MarshalJSON() ([]byte, error) {
+	w := map[string]any(q)
+	if t := q.questionType(); t != "" {
+		w["type"] = t
+	}
+	return json.Marshal(sanitizeNonFinite(w))
+}
+
+func emptyContainer(v any) bool {
+	if v == nil { return true }
+	switch val := v.(type) {
+	case map[string]any:
+		return len(val) == 0
+	case []any:
+		return len(val) == 0
+	}
+	return false
 }
 
 // ─── validation helper ───────────────────────────────────────────────────────

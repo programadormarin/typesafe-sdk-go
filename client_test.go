@@ -197,7 +197,7 @@ func TestSystemOne_returnsAuthenticationError(t *testing.T) {
 	defer srv.Close()
 
 	c := mustNewClient(t, WithBaseURL(srv.URL), WithRetry(RetryPolicy{MaxRetries: 0}))
-	_, err := c.SystemOne(context.Background(), "x", map[string]Question{"q": Noul{}})
+	_, err := c.SystemOne(context.Background(), "x", map[string]Question{"q": Noul{Instructions: "q"}})
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -224,7 +224,7 @@ func TestSystemOne_retriesOn500(t *testing.T) {
 		BackoffInitial: 0,
 		HTTPStatuses:   map[int]bool{500: true},
 	}))
-	_, err := c.SystemOne(context.Background(), "x", map[string]Question{"q": Noul{}})
+	_, err := c.SystemOne(context.Background(), "x", map[string]Question{"q": Noul{Instructions: "q"}})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -282,7 +282,7 @@ func TestSystemOne_sdkHeaderPresent(t *testing.T) {
 	defer srv.Close()
 
 	c := mustNewClient(t, WithBaseURL(srv.URL), WithRetry(RetryPolicy{MaxRetries: 0}))
-	_, _ = c.SystemOne(context.Background(), "x", map[string]Question{"q": Noul{}})
+	_, _ = c.SystemOne(context.Background(), "x", map[string]Question{"q": Noul{Instructions: "q"}})
 	if !strings.HasPrefix(sdkHeader, "typesafe-sdk-go/") {
 		t.Errorf("X-TypeSafe-SDK = %q, want typesafe-sdk-go/ prefix", sdkHeader)
 	}
@@ -300,7 +300,7 @@ func TestSystemOne_defaultHeaderForwarded(t *testing.T) {
 		WithHeader("X-Org", "acme"),
 		WithRetry(RetryPolicy{MaxRetries: 0}),
 	)
-	_, _ = c.SystemOne(context.Background(), "x", map[string]Question{"q": Noul{}})
+	_, _ = c.SystemOne(context.Background(), "x", map[string]Question{"q": Noul{Instructions: "q"}})
 	if orgHeader != "acme" {
 		t.Errorf("X-Org = %q, want acme", orgHeader)
 	}

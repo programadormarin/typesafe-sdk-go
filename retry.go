@@ -2,6 +2,7 @@ package typesafe
 
 import (
 	"context"
+	"fmt"
 	"errors"
 	"math"
 	"math/rand"
@@ -75,6 +76,20 @@ func defaultRetryStatuses() map[int]bool {
 		m[s] = true
 	}
 	return m
+}
+
+// validate checks RetryPolicy fields.
+func (p RetryPolicy) validate() error {
+	if p.MaxRetries < 0 {
+		return fmt.Errorf("retry max retries must be non-negative: %w", ErrInvalidRequest)
+	}
+	if p.BackoffInitial < 0 || p.BackoffMax < 0 {
+		return fmt.Errorf("retry durations must be non-negative: %w", ErrInvalidRequest)
+	}
+	if p.BackoffJitter < 0 || p.BackoffJitter > 1 {
+		return fmt.Errorf("retry jitter must be between zero and one: %w", ErrInvalidRequest)
+	}
+	return nil
 }
 
 // isRetryable reports whether err should trigger another attempt.

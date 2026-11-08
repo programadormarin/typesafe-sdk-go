@@ -165,9 +165,13 @@ func TestSystemOneResponse_unknownTypeSkipped(t *testing.T) {
 
 	resp := decodeSystemOneResponse(t, raw)
 
-	// Only the known answer must survive.
-	if len(resp.Answers) != 1 {
-		t.Errorf("Answers len = %d, want 1 (unknown type should be dropped)", len(resp.Answers))
+	// Unknown answer types are preserved as UnknownAnswer (forward-compat).
+	if len(resp.Answers) != 2 {
+		t.Errorf("Answers len = %d, want 2", len(resp.Answers))
+	}
+	u, ok := resp.Answers["unknown"].(*UnknownAnswer)
+	if !ok || u.Type != "embedding" {
+		t.Error("unknown answer must be preserved as *UnknownAnswer")
 	}
 	if _, ok := resp.Answers["known"]; !ok {
 		t.Error("known answer must be present")

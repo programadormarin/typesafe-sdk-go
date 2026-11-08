@@ -1,123 +1,130 @@
 package typesafe
 
 import (
+	"log/slog"
 	"net/http"
 	"time"
 )
 
-// ─── Client options ───────────────────────────────────────────────────────────
-
-// ClientOption configures a [Client] at construction time.
-// Pass one or more options to [New].
+// ClientOption functional option.
 type ClientOption func(*clientConfig)
 
-// clientConfig holds resolved client-level settings.
 type clientConfig struct {
 	apiKey         string
 	baseURL        string
 	defaultModel   string
 	timeout        time.Duration
 	retry          RetryPolicy
-	retrySet       bool // true if caller passed WithRetry
+	retrySet       bool
 	defaultHeaders map[string]string
+	headers        http.Header
 	httpClient     *http.Client
+	logger         *slog.Logger
+	compression    Compression
 }
 
-// WithAPIKey sets the API key used for all requests.
-// When not set, the client reads TYPESAFE_API_KEY from the environment.
-func WithAPIKey(key string) ClientOption {
-	return func(c *clientConfig) { c.apiKey = key }
-}
+// Config fields covered above.
 
-// WithBaseURL overrides the API base URL (default: https://api.typesafe.ai).
-// When not set, the client reads TYPESAFE_BASE_URL from the environment.
-func WithBaseURL(u string) ClientOption {
-	return func(c *clientConfig) { c.baseURL = u }
-}
-
-// WithModel sets the default model name used when no per-request model is specified.
-// When not set, the client reads TYPESAFE_DEFAULT_MODEL from the environment,
-// then falls back to "jev-latest".
-func WithModel(model string) ClientOption {
-	return func(c *clientConfig) { c.defaultModel = model }
-}
-
-// WithTimeout sets the per-request HTTP timeout (default: 10s).
-// This is the timeout for each individual HTTP operation, not the total retry budget.
-// Use WithRetry to control the total budget across retries.
-func WithTimeout(d time.Duration) ClientOption {
-	return func(c *clientConfig) { c.timeout = d }
-}
-
-// WithRetry replaces the default [RetryPolicy].
-// Pass RetryPolicy{MaxRetries: 0} to disable retries entirely.
+// Functional options
+func WithAPIKey(key string) ClientOption { return func(c *clientConfig) { c.apiKey = key } }
+func WithBaseURL(u string) ClientOption { return func(c *clientConfig) { c.baseURL = u } }
+func WithModel(model string) ClientOption { return func(c *clientConfig) { c.defaultModel = model } }
+func WithTimeout(d time.Duration) ClientOption { return func(c *clientConfig) { c.timeout = d } }
 func WithRetry(p RetryPolicy) ClientOption {
-	return func(c *clientConfig) {
-		c.retry = p
-		c.retrySet = true
-	}
+	return func(c *clientConfig) { c.retry = p; c.retrySet = true }
 }
-
-// WithHTTPClient uses an existing *http.Client instead of the SDK's default.
-// The provided client's Timeout field is used as the per-request timeout unless
-// WithTimeout is also provided.
-func WithHTTPClient(h *http.Client) ClientOption {
-	return func(c *clientConfig) { c.httpClient = h }
-}
-
-// WithHeader adds a default header sent with every request.
-// Use WithRequestHeader for per-call headers.
+func WithHTTPClient(h *http.Client) ClientOption { return func(c *clientConfig) { c.httpClient = h } }
 func WithHeader(key, value string) ClientOption {
 	return func(c *clientConfig) {
-		if c.defaultHeaders == nil {
-			c.defaultHeaders = make(map[string]string)
-		}
+		if c.defaultHeaders == nil { c.defaultHeaders = make(map[string]string) }
 		c.defaultHeaders[key] = value
 	}
 }
+func WithHeaders(h http.Header) ClientOption {
+	return func(c *clientConfig) {
+		if c.headers == nil { c.headers = make(http.Header) }
+		for k, vs := range h {
+			for _, v := range vs { c.headers.Add(k, v) }
+		}
+	}
+}
+func WithLogger(l *slog.Logger) ClientOption { return func(c *clientConfig) { c.logger = l } }
+func WithCompression(comp Compression) ClientOption { return func(c *clientConfig) { c.compression = comp } }
 
-// ─── Per-request options ──────────────────────────────────────────────────────
-
-// RequestOption configures a single [Client.SystemOne] or [Client.Models] call.
+// WithRequest* options
 type RequestOption func(*requestOptions)
 
-// requestOptions holds per-call overrides merged on top of client-level defaults.
 type requestOptions struct {
 	model        string
-	timeout      time.Duration // zero = use client default
+	modelSet     bool
+	timeout      time.Duration
 	timeoutSet   bool
 	retry        RetryPolicy
 	retrySet     bool
-	extraHeaders map[string]string
+	headers      http.Header
+	assets       map[string]*Image
+	extraBody    map[string]any
 }
 
-// WithRequestModel overrides the model for a single call.
 func WithRequestModel(model string) RequestOption {
-	return func(o *requestOptions) { o.model = model }
+	return func(o *requestOptions) { o.model = model; o.modelSet = true }
 }
-
-// WithRequestTimeout overrides the HTTP timeout for a single call.
 func WithRequestTimeout(d time.Duration) RequestOption {
-	return func(o *requestOptions) {
-		o.timeout = d
-		o.timeoutSet = true
-	}
+	return func(o *requestOptions) { o.timeout = d; o.timeoutSet = true }
 }
-
-// WithRequestRetry overrides the [RetryPolicy] for a single call.
 func WithRequestRetry(p RetryPolicy) RequestOption {
-	return func(o *requestOptions) {
-		o.retry = p
-		o.retrySet = true
-	}
+	return func(o *requestOptions) { o.retry = p; o.retrySet = true }
 }
-
-// WithRequestHeader adds or overrides a header for a single call.
 func WithRequestHeader(key, value string) RequestOption {
 	return func(o *requestOptions) {
-		if o.extraHeaders == nil {
-			o.extraHeaders = make(map[string]string)
-		}
-		o.extraHeaders[key] = value
+		if o.headers == nil { o.headers = make(http.Header) }
+		o.headers.Set(key, value)
 	}
+}
+func WithRequestHeaders(h http.Header) RequestOption {
+	return func(o *requestOptions) {
+		if o.headers == nil { o.headers = make(http.Header) }
+		for k, vs := range h {
+			for _, v := range vs { o.headers.Add(k, v) }
+		}
+	}
+}
+func WithRequestAssets(a map[string]*Image) RequestOption { return func(o *requestOptions) { o.assets = a } }
+func WithRequestExtraBody(b map[string]any) RequestOption { return func(o *requestOptions) { o.extraBody = b } }
+
+// normalizeRequestOptions handles legacy RequestOption funcs and valksor RequestOptions structs.
+func normalizeRequestOptions(c *Client, opts []any) requestOptions {
+	ro := requestOptions{retry: c.retry}
+	for _, o := range opts {
+		switch v := o.(type) {
+		case RequestOption:
+			v(&ro)
+		case func(*requestOptions):
+			v(&ro)
+		case RequestOptions:
+			if v.Timeout != 0 { ro.timeout = v.Timeout; ro.timeoutSet = true }
+			if v.Retry != nil { ro.retry = *v.Retry; ro.retrySet = true }
+			if v.Headers != nil {
+				if ro.headers == nil { ro.headers = make(http.Header) }
+				for k, vs := range v.Headers {
+					for _, val := range vs { ro.headers.Add(k, val) }
+				}
+			}
+		case *RequestOptions:
+			if v != nil {
+				// recurse via value
+				ro2 := normalizeRequestOptions(c, []any{*v})
+				// merge
+				if ro2.timeoutSet { ro.timeout = ro2.timeout; ro.timeoutSet = true }
+				if ro2.retrySet { ro.retry = ro2.retry; ro.retrySet = true }
+				if ro2.headers != nil {
+					if ro.headers == nil { ro.headers = make(http.Header) }
+					for k, vs := range ro2.headers { for _, val := range vs { ro.headers.Add(k, val) } }
+				}
+			}
+		default:
+			// ignore
+		}
+	}
+	return ro
 }

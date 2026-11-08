@@ -1,6 +1,7 @@
 package typesafe
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -8,13 +9,26 @@ import (
 	"github.com/programadormarin/typesafe-sdk-go/internal/jsonutil"
 )
 
+var (
+	ErrInvalidRequest  = errors.New("invalid TypeSafe request")
+	ErrInvalidResponse = errors.New("invalid TypeSafe response")
+)
+
 // TypeSafeError is the base type for all errors returned by this SDK.
 // Use errors.As to unwrap to a more specific type.
 type TypeSafeError struct {
 	Message string
+	Cause   error
 }
 
-func (e *TypeSafeError) Error() string { return e.Message }
+func (e *TypeSafeError) Error() string {
+	if e.Cause != nil {
+		return e.Message + ": " + e.Cause.Error()
+	}
+	return e.Message
+}
+
+func (e *TypeSafeError) Unwrap() error { return e.Cause }
 
 // TypeSafeAPIError is returned for any HTTP response with a non-success status code.
 type TypeSafeAPIError struct {
@@ -68,6 +82,20 @@ func (e *TypeSafePermissionDeniedError) Unwrap() error { return &e.TypeSafeAPIEr
 type TypeSafeNotFoundError struct{ TypeSafeAPIError }
 
 func (e *TypeSafeNotFoundError) Unwrap() error { return &e.TypeSafeAPIError }
+
+// TypeSafeConflictError is returned for HTTP 409 responses.
+type TypeSafeConflictError struct{ TypeSafeAPIError }
+
+func (e *TypeSafeConflictError) Unwrap() error { return &e.TypeSafeAPIError }
+
+// TypeSafeUserAbortError is returned when the request is cancelled by the caller.
+type TypeSafeUserAbortError struct {
+	TypeSafeError
+	Cause error
+}
+
+func (e *TypeSafeUserAbortError) Error() string { return "request was canceled by caller" }
+func (e *TypeSafeUserAbortError) Unwrap() error { return e.Cause }
 
 // TypeSafeUnprocessableEntityError is returned for HTTP 422 responses.
 // This typically means a required field was missing or a question was malformed.
@@ -165,6 +193,8 @@ func newAPIError(status int, body []byte, headers http.Header, endpoint string) 
 		return &TypeSafePermissionDeniedError{TypeSafeAPIError: base}
 	case http.StatusNotFound:
 		return &TypeSafeNotFoundError{TypeSafeAPIError: base}
+	case http.StatusConflict:
+		return &TypeSafeConflictError{TypeSafeAPIError: base}
 	case http.StatusUnprocessableEntity:
 		return &TypeSafeUnprocessableEntityError{TypeSafeAPIError: base}
 	case http.StatusTooManyRequests:
