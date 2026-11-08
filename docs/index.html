@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>TypeSafe Go SDK</title>
-  <meta name="description" content="An unofficial Go SDK for the TypeSafe System One API. A typed, dependency-free client for sending state and questions to TypeSafe's System One models, inspired by the official Python and JavaScript SDKs.">
+  <meta name="description" content="An unofficial Go SDK for the TypeSafe System One API. A typed Go client for sending state and questions to TypeSafe's System One models, inspired by the official Python and JavaScript SDKs.">
   <style>
     :root {
       --bg: #0d1117;
@@ -137,18 +137,19 @@
       of generated text.
     </p>
     <p>
-      The module is a single package (<code>typesafe</code>) built purely on the Go standard library:
+      The module is a single package (<code>typesafe</code>) with a small dependency surface:
     </p>
     <ul>
       <li><strong>Useful</strong> — mirrors the official SDK API contract, so code that follows TypeSafe's
       Python or JavaScript examples ports to Go with minimal changes</li>
-      <li><strong>Secure</strong> — no external dependencies, no logging of secrets, API keys passed explicitly
+      <li><strong>Secure</strong> — minimal dependencies, no logging of secrets, API keys passed explicitly
       or via <code>TYPESAFE_API_KEY</code>, and TLS by default</li>
       <li><strong>Well developed</strong> — CI-tested against multiple Go versions, integration-tested against the
       live API, versioned releases, and a full typed error hierarchy</li>
       <li>Sync and async-friendly via <code>context.Context</code></li>
       <li>Automatic retries with exponential backoff and <code>Retry-After</code> respect</li>
-      <li>All three question primitives: <code>Noul</code>, <code>Choice</code>, <code>Score</code></li>
+      <li>All four question primitives: <code>Noul</code>, <code>Choice</code>, <code>Score</code>, and <code>Box</code></li>
+      <li>Image assets, zstd request compression, and typed <code>SystemOneAs[T]</code> responses</li>
     </ul>
     <p>
       This SDK was <strong>inspired by the official TypeSafe Python and JavaScript SDKs</strong> from
@@ -228,6 +229,26 @@ fmt.Println(resp.Scores()["urgency"].Score)     // e.g. 1.8</code></pre>
         <p>Probability-weighted position on ordered, descriptive levels.</p>
         <p><code>resp.Scores()["q"].Score</code> &rarr; e.g. <code>1.05</code></p>
       </div>
+      <div class="card">
+        <h3>Box — locate in an image</h3>
+        <p>Finds what the instructions describe in the request image.</p>
+        <p><code>resp.Box("q")</code> &rarr; box edges and confidence</p>
+      </div>
+      <div class="card">
+        <h3>Images — multipart assets</h3>
+        <p>Send image bytes with <code>NewImage</code>, <code>ImageFromFile</code>, or <code>ImageFromBase64</code>.</p>
+        <p><code>client.AttachAssets(img)</code> or per-request <code>Assets</code></p>
+      </div>
+      <div class="card">
+        <h3>SystemOneAs[T] — typed responses</h3>
+        <p>Decode lifted answers directly into your own struct.</p>
+        <p><code>typesafe.SystemOneAs[Triage](ctx, client, req)</code></p>
+      </div>
+      <div class="card">
+        <h3>zstd compression</h3>
+        <p>Bodies of 1 KiB or more are compressed by default; opt out for incompatible proxies.</p>
+        <p><code>CompressionNone</code> or <code>WithCompression(...)</code></p>
+      </div>
     </div>
   </section>
 
@@ -237,7 +258,7 @@ fmt.Println(resp.Scores()["urgency"].Score)     // e.g. 1.8</code></pre>
     <ul class="links">
       <li><a href="https://docs.typesafe.ai/introduction">Introduction</a> — what TypeSafe is, and what Jev is (and isn't)</li>
       <li><a href="https://docs.typesafe.ai/concepts/system-one">System One</a> — the programming model behind the API</li>
-      <li><a href="https://docs.typesafe.ai/primitives">Primitives</a> — Noul, Choice, and Score question types</li>
+      <li><a href="https://docs.typesafe.ai/primitives">Primitives</a> — Noul, Choice, Score, and Box question types</li>
       <li><a href="https://docs.typesafe.ai/concepts/state">State</a> — how to structure the context you send</li>
       <li><a href="https://docs.typesafe.ai/confidence">Confidence</a> — how TypeSafe reports certainty and how to use it</li>
       <li><a href="https://docs.typesafe.ai/concepts/how-to-build-with-system-one">How to build with TypeSafe</a> — design guidance</li>

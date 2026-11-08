@@ -11,11 +11,14 @@ directly. You send **state** (text, a record, a chat log — any JSON value) and
 of typed **questions**; the model returns typed **answers** you can act on without
 parsing generated text.
 
-- **Zero external dependencies** — pure standard library
+- Small dependency surface — standard library plus `klauspost/compress` for zstd
 - Sync and async-friendly via `context.Context`
 - Automatic retries with exponential backoff and `Retry-After` respect
 - Full typed error hierarchy — `errors.As` to any specific subtype
-- All three question primitives: `Noul`, `Choice`, `Score`
+- All four question primitives: `Noul`, `Choice`, `Score`, and `Box`
+- Image assets uploaded as multipart parts
+- zstd request compression for bodies of 1 KiB or more
+- Generic `SystemOneAs[T]` for typed response models
 
 ## Requirements
 
@@ -294,6 +297,105 @@ for _, m := range models.Models {
 }
 ```
 
+## Box questions
+
+`Box` locates what its instructions describe in the request's image. It returns
+the box edges as fractions of the image dimensions, plus a confidence when the
+model provides one.
+
+```go
+resp, err := client.SystemOne(ctx, typesafe.SystemOneRequest{
+    State: typesafe.ImageFromFile("photos/dog.png"),
+    Questions: map[string]typesafe.Question{
+        "dog": typesafe.Box{Instructions: "The dog"},
+    },
+})
+if err != nil {
+    log.Fatal(err)
+}
+if box, ok := resp.Box("dog"); ok {
+    fmt.Println(box.Box.Top, box.Box.Left, box.Confidence)
+}
+```
+
+Box questions need a vision-language model and the image feature enabled on the
+API side.
+
+## Images
+
+`*Image` holds image bytes or a path to an image file. Place it in `State`,
+question instructions, criteria, or `ExtraBody`; the client uploads the bytes as
+multipart parts and substitutes an image reference in the JSON.
+
+```go
+img := typesafe.NewImage(imageBytes)
+resp, err := client.SystemOne(ctx, typesafe.SystemOneRequest{
+    State: []any{"Here is a photo:", img},
+    Questions: map[string]typesafe.Question{
+        "damaged": typesafe.Noul{Instructions: "Is the product damaged?"},
+    },
+})
+```
+
+Create images with `NewImage`, `ImageFromFile`, or `ImageFromBase64`. Pass aliases
+explicitly with `SystemOneRequest.Assets`, or attach them to the client for the
+duration of a call:
+
+```go
+defer client.AttachAssets(img)()
+```
+
+## Typed responses with SystemOneAs
+
+`SystemOneAs[T]` decodes answers into a caller-defined type. Answers are lifted
+from `answers.{name}` to top-level keys.
+
+```go
+type Triage struct {
+    Model    string               `json:"model"`
+    Spam     typesafe.NoulAnswer  `json:"spam"`
+    Category typesafe.ChoiceAnswer `json:"category"`
+}
+
+triage, err := typesafe.SystemOneAs[Triage](ctx, client, typesafe.SystemOneRequest{
+    State: "I was charged twice.",
+    Questions: map[string]typesafe.Question{
+        "spam":     typesafe.Noul{Instructions: "Is this spam?"},
+        "category": typesafe.Choice{Instructions: "What is this about?", Criteria: map[string]any{"billing": nil, "other": nil}},
+    },
+})
+```
+
+## Request compression
+
+Bodies of 1 KiB or more are compressed with zstd by default. Disable it for
+proxies or self-hosted endpoints that do not accept compressed requests:
+
+```go
+client, err := typesafe.NewClient(typesafe.Config{
+    Compression: typesafe.CompressionNone,
+})
+```
+
+The functional constructor supports the same setting with
+`typesafe.WithCompression(typesafe.CompressionNone)`.
+
+## Config-based construction
+
+`NewClient` accepts a `Config` when you prefer explicit configuration:
+
+```go
+client, err := typesafe.NewClient(typesafe.Config{
+    APIKey:       "sk-...",
+    BaseURL:      "https://api.typesafe.ai",
+    DefaultModel: "jev-latest",
+    Timeout:      15 * time.Second,
+    Compression:  typesafe.CompressionDefault,
+})
+```
+
+`client.Models(ctx)` and `client.Models.List(ctx)` both list available models.
+
 ## Environment variables
 
 | Variable | Description | Default |
@@ -306,7 +408,7 @@ for _, m := range models.Models {
 
 | Example | Description |
 |---------|-------------|
-| [`examples/quickstart`](examples/quickstart/main.go) | All three primitives in one call |
+| [`examples/quickstart`](examples/quickstart/main.go) | Noul, Choice, and Score in one call |
 | [`examples/parallel_questions`](examples/parallel_questions/main.go) | 7-question triage pipeline |
 
 ## Integration tests
