@@ -33,10 +33,10 @@ go get github.com/programadormarin/typesafe-sdk-go
 Pin a release instead of tracking the latest commit:
 
 ```sh
-go get github.com/programadormarin/typesafe-sdk-go@v0.1.1
+go get github.com/programadormarin/typesafe-sdk-go@v0.1.2
 ```
 
-Each release is tagged (e.g. `v0.1.1`), and the running SDK version is exposed
+Each release is tagged (e.g. `v0.1.2`), and the running SDK version is exposed
 as `typesafe.Version` and embedded in the `User-Agent` / `X-TypeSafe-SDK`
 request headers.
 
